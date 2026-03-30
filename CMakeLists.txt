@@ -1,3 +1,3 @@
-icy_add_module(pluga
+icy_add_module(graft
   DEPENDS base
 )

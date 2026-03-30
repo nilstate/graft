@@ -1,39 +1,18 @@
-# Pluga
+# Graft
 
-> Simple C++ plugin system
+Native plugin ABI and shared-library loading for icey.
 
-[![CI](https://github.com/nilstate/icey/actions/workflows/ci.yml/badge.svg)](https://github.com/nilstate/icey/actions/workflows/ci.yml)
+- Namespace: `icy::graft`
+- CMake target: `icey::graft`
+- Primary header: `include/icy/graft/graft.h`
+- Directory layout: `include/` for the public ABI contract, `src/` for manifest validation and library loading, `tests/` for positive and negative shared-library fixtures
 
-**Repository**: [https://github.com/nilstate/icey](https://github.com/nilstate/icey)
-**Dependencies**: [icey (base)](https://github.com/nilstate/icey)
-**Licence**: LGPL-2.1+
+Graft is the native plugin boundary for icey. It defines:
 
-Pluga is a simple C++ plugin system that you can drop into your own projects. It currently supports:
+- a versioned manifest exported from a shared library
+- runtime kinds (`native`, `worker`)
+- a loader that opens the library, validates the manifest, and resolves the declared entrypoint
 
-* Loading cross-platform plugins and shared libraries
-* Simple and elegant API for defining plugins
-* Strict API versioning for ABI safety
+Unlike the old `pluga` shape, graft does not make a C++ class hierarchy the public ABI. Hosts and plugins agree on a manifest and then exchange typed C-compatible entrypoints.
 
-## Installing
-
-Pluga is part of the [icey](https://github.com/nilstate/icey) project. To build:
-
-~~~ bash
-git clone https://github.com/nilstate/icey.git
-cd icey
-git submodule update --init src/pluga
-cmake -B build -DBUILD_MODULE_pluga=ON -DBUILD_TESTS=ON
-cmake --build build
-~~~
-
-Pluga can also be used as an external module by cloning it into the icey `src` folder, where it will be auto-discovered by the build system.
-
-## Contributing
-
-Contributions in the form of pull requests are always welcome.
-
-1. [Fork icey on Github](https://github.com/nilstate/icey)
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+- [Graft module guide](../../docs/modules/graft.md)

@@ -13,6 +13,6 @@ Graft is the native plugin boundary for icey. It defines:
 - runtime kinds (`native`, `worker`)
 - a loader that opens the library, validates the manifest, and resolves the declared entrypoint
 
-Unlike the old `pluga` shape, graft does not make a C++ class hierarchy the public ABI. Hosts and plugins agree on a manifest and then exchange typed C-compatible entrypoints.
+Graft does not make a C++ class hierarchy the public ABI. Hosts and plugins agree on a manifest and then exchange typed C-compatible entrypoints.
 
 - [Graft module guide](../../docs/modules/graft.md)

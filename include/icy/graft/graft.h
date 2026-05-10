@@ -23,14 +23,10 @@
 
 
 // Shared library exports
-#if defined(ICY_WIN) && defined(ICY_SHARED_LIBRARY)
 #if defined(Graft_EXPORTS)
-#define Graft_API __declspec(dllexport)
+#define Graft_API ICY_EXPORT
 #else
-#define Graft_API __declspec(dllimport)
-#endif
-#else
-#define Graft_API
+#define Graft_API ICY_IMPORT
 #endif
 
 #ifdef ICY_WIN

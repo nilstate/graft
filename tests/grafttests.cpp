@@ -24,17 +24,10 @@ std::string pluginPath(const std::string& folder, const std::string& target)
     path += "/";
 
 #if WIN32
-#ifdef _DEBUG
-    path += target + "d.dll";
+    path += target + GRAFT_TEST_PLUGIN_DEBUG_POSTFIX + GRAFT_TEST_PLUGIN_SUFFIX;
 #else
-    path += target + ".dll";
-#endif
-#else
-#ifdef _DEBUG
-    path += "lib" + target + "d.so";
-#else
-    path += "lib" + target + ".so";
-#endif
+    path += GRAFT_TEST_PLUGIN_PREFIX + target + GRAFT_TEST_PLUGIN_DEBUG_POSTFIX
+          + GRAFT_TEST_PLUGIN_SUFFIX;
 #endif
 
     return path;

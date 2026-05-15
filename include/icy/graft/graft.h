@@ -44,32 +44,49 @@ namespace icy {
 namespace graft {
 
 
+/// Current binary manifest ABI version required by the loader.
 inline constexpr std::uint32_t ABI_VERSION = 1;
+/// Exported symbol name that plugins use for their manifest.
 inline constexpr const char* MANIFEST_SYMBOL = "icy_graft_manifest";
+/// Runtime string for plugins loaded directly into the current process.
 inline constexpr const char* RUNTIME_NATIVE = "native";
+/// Runtime string for plugins intended to execute in a worker runtime.
 inline constexpr const char* RUNTIME_WORKER = "worker";
 
 
+/// Runtime contract declared by a plugin manifest.
 enum class RuntimeKind
 {
+    /// Runtime string is missing or not recognized.
     Unknown = 0,
+    /// Plugin is loaded directly into the host process.
     Native,
+    /// Plugin is intended for a worker runtime.
     Worker,
 };
 
 
+/// Metadata exported by a plugin under `icy_graft_manifest`.
 struct Manifest
 {
+    /// ABI version expected to match `ABI_VERSION`.
     std::uint32_t abiVersion;
+    /// Source file that declared the manifest.
     const char* fileName;
+    /// Stable plugin identifier.
     const char* id;
+    /// Human-readable plugin name.
     const char* name;
+    /// Plugin version string.
     const char* version;
+    /// Runtime contract string, such as `native` or `worker`.
     const char* runtime;
+    /// Exported symbol name for the plugin entrypoint.
     const char* entrypoint;
 };
 
 
+/// Loads a native plugin library and resolves its typed entrypoint.
 class Graft_API Library
 {
 public:
@@ -112,8 +129,11 @@ private:
 };
 
 
+/// Converts a manifest runtime string to a `RuntimeKind`.
 [[nodiscard]] Graft_API RuntimeKind parseRuntimeKind(std::string_view runtime) noexcept;
+/// Returns the manifest runtime string for a `RuntimeKind`.
 [[nodiscard]] Graft_API const char* runtimeKindName(RuntimeKind runtime) noexcept;
+/// Throws when a manifest is incompatible or missing required fields.
 Graft_API void validateManifest(const Manifest& manifest, std::string_view path);
 
 

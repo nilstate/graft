@@ -34,7 +34,7 @@ void Library::open(const std::string& path)
 
     try {
         loadManifest();
-        validateManifest(*_manifest, _path);
+        validatePluginManifest(*_manifest, _path);
     } catch (...) {
         close();
         throw;
@@ -96,6 +96,8 @@ RuntimeKind parseRuntimeKind(std::string_view runtime) noexcept
         return RuntimeKind::Native;
     if (runtime == RUNTIME_WORKER)
         return RuntimeKind::Worker;
+    if (runtime == RUNTIME_HOST)
+        return RuntimeKind::Host;
     return RuntimeKind::Unknown;
 }
 
@@ -107,6 +109,8 @@ const char* runtimeKindName(RuntimeKind runtime) noexcept
             return RUNTIME_NATIVE;
         case RuntimeKind::Worker:
             return RUNTIME_WORKER;
+        case RuntimeKind::Host:
+            return RUNTIME_HOST;
         default:
             return "unknown";
     }
@@ -127,6 +131,27 @@ void validateManifest(const Manifest& manifest, std::string_view path)
         throw std::runtime_error("graft manifest is missing entrypoint in '" + std::string(path) + "'");
     if (parseRuntimeKind(manifest.runtime ? manifest.runtime : "") == RuntimeKind::Unknown)
         throw std::runtime_error("graft manifest has unknown runtime in '" + std::string(path) + "'");
+}
+
+
+void validatePluginManifest(const Manifest& manifest, std::string_view path)
+{
+    validateManifest(manifest, path);
+
+    const auto runtime = parseRuntimeKind(manifest.runtime ? manifest.runtime : "");
+    if (runtime == RuntimeKind::Host)
+        throw std::runtime_error("graft manifest is a host surface, not a plugin, in '"
+                                 + std::string(path) + "'");
+}
+
+
+void validateHostSurfaceManifest(const Manifest& manifest, std::string_view path)
+{
+    validateManifest(manifest, path);
+
+    const auto runtime = parseRuntimeKind(manifest.runtime ? manifest.runtime : "");
+    if (runtime != RuntimeKind::Host)
+        throw std::runtime_error("graft manifest is not a host surface in '" + std::string(path) + "'");
 }
 
 

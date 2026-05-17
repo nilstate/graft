@@ -7,16 +7,19 @@
 //
 /// @defgroup graft Graft module
 ///
-/// Native plugin ABI contract and runtime loading helpers.
+/// Native ABI contracts and runtime loading helpers.
 /// @{
 
 
 #pragma once
 
 
+#include "icy/graft/abi.h"
+
 #include "icy/base.h"
 #include "icy/sharedlibrary.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -29,32 +32,27 @@
 #define Graft_API ICY_IMPORT
 #endif
 
-#ifdef ICY_WIN
-#define ICY_GRAFT_EXPORT __declspec(dllexport)
-#elif defined(__GNUC__) || defined(__clang__)
-#define ICY_GRAFT_EXPORT __attribute__((visibility("default")))
-#else
-#define ICY_GRAFT_EXPORT
-#endif
-
-
 namespace icy {
 /// @ingroup graft
-/// Shared-library plugin contracts and runtime loading helpers.
+/// Shared-library ABI contracts and runtime loading helpers.
 namespace graft {
 
 
 /// Current binary manifest ABI version required by the loader.
-inline constexpr std::uint32_t ABI_VERSION = 1;
-/// Exported symbol name that plugins use for their manifest.
-inline constexpr const char* MANIFEST_SYMBOL = "icy_graft_manifest";
+inline constexpr std::uint32_t ABI_VERSION = ICY_GRAFT_ABI_VERSION;
+/// Exported symbol name that plugin libraries use for their manifest.
+inline constexpr const char* PLUGIN_MANIFEST_SYMBOL = ICY_GRAFT_PLUGIN_MANIFEST_SYMBOL;
+/// Backwards-compatible name for `PLUGIN_MANIFEST_SYMBOL`.
+inline constexpr const char* MANIFEST_SYMBOL = PLUGIN_MANIFEST_SYMBOL;
 /// Runtime string for plugins loaded directly into the current process.
-inline constexpr const char* RUNTIME_NATIVE = "native";
+inline constexpr const char* RUNTIME_NATIVE = ICY_GRAFT_RUNTIME_NATIVE;
 /// Runtime string for plugins intended to execute in a worker runtime.
-inline constexpr const char* RUNTIME_WORKER = "worker";
+inline constexpr const char* RUNTIME_WORKER = ICY_GRAFT_RUNTIME_WORKER;
+/// Runtime string for host-exported C ABI surfaces.
+inline constexpr const char* RUNTIME_HOST = ICY_GRAFT_RUNTIME_HOST;
 
 
-/// Runtime contract declared by a plugin manifest.
+/// Runtime contract declared by a graft manifest.
 enum class RuntimeKind
 {
     /// Runtime string is missing or not recognized.
@@ -63,27 +61,39 @@ enum class RuntimeKind
     Native,
     /// Plugin is intended for a worker runtime.
     Worker,
+    /// Manifest describes a host-exported C ABI surface, not a plugin.
+    Host,
 };
 
 
-/// Metadata exported by a plugin under `icy_graft_manifest`.
+/// Metadata exported by a plugin or host surface.
 struct Manifest
 {
     /// ABI version expected to match `ABI_VERSION`.
     std::uint32_t abiVersion;
     /// Source file that declared the manifest.
     const char* fileName;
-    /// Stable plugin identifier.
+    /// Stable plugin or surface identifier.
     const char* id;
-    /// Human-readable plugin name.
+    /// Human-readable plugin or surface name.
     const char* name;
-    /// Plugin version string.
+    /// Plugin or surface version string.
     const char* version;
-    /// Runtime contract string, such as `native` or `worker`.
+    /// Runtime contract string, such as `native`, `worker`, or `host`.
     const char* runtime;
-    /// Exported symbol name for the plugin entrypoint.
+    /// Exported symbol name for the typed entrypoint.
     const char* entrypoint;
 };
+
+static_assert(sizeof(Manifest) == sizeof(::icy_graft_manifest_t));
+static_assert(alignof(Manifest) == alignof(::icy_graft_manifest_t));
+static_assert(offsetof(Manifest, abiVersion) == offsetof(::icy_graft_manifest_t, abiVersion));
+static_assert(offsetof(Manifest, fileName) == offsetof(::icy_graft_manifest_t, fileName));
+static_assert(offsetof(Manifest, id) == offsetof(::icy_graft_manifest_t, id));
+static_assert(offsetof(Manifest, name) == offsetof(::icy_graft_manifest_t, name));
+static_assert(offsetof(Manifest, version) == offsetof(::icy_graft_manifest_t, version));
+static_assert(offsetof(Manifest, runtime) == offsetof(::icy_graft_manifest_t, runtime));
+static_assert(offsetof(Manifest, entrypoint) == offsetof(::icy_graft_manifest_t, entrypoint));
 
 
 /// Loads a native plugin library and resolves its typed entrypoint.
@@ -135,6 +145,38 @@ private:
 [[nodiscard]] Graft_API const char* runtimeKindName(RuntimeKind runtime) noexcept;
 /// Throws when a manifest is incompatible or missing required fields.
 Graft_API void validateManifest(const Manifest& manifest, std::string_view path);
+/// Throws when a manifest is not a plugin-loadable manifest.
+Graft_API void validatePluginManifest(const Manifest& manifest, std::string_view path);
+/// Throws when a manifest is not a host-exported surface manifest.
+Graft_API void validateHostSurfaceManifest(const Manifest& manifest, std::string_view path);
+
+[[nodiscard]] inline Manifest manifestFromC(const ::icy_graft_manifest_t& manifest) noexcept
+{
+    return {
+        manifest.abiVersion,
+        manifest.fileName,
+        manifest.id,
+        manifest.name,
+        manifest.version,
+        manifest.runtime,
+        manifest.entrypoint,
+    };
+}
+
+inline void validateManifest(const ::icy_graft_manifest_t& manifest, std::string_view path)
+{
+    validateManifest(manifestFromC(manifest), path);
+}
+
+inline void validatePluginManifest(const ::icy_graft_manifest_t& manifest, std::string_view path)
+{
+    validatePluginManifest(manifestFromC(manifest), path);
+}
+
+inline void validateHostSurfaceManifest(const ::icy_graft_manifest_t& manifest, std::string_view path)
+{
+    validateHostSurfaceManifest(manifestFromC(manifest), path);
+}
 
 
 } // namespace graft
@@ -142,16 +184,16 @@ Graft_API void validateManifest(const Manifest& manifest, std::string_view path)
 
 
 #define ICY_GRAFT_PLUGIN(pluginId, pluginName, pluginVersion, runtimeKind, entrypointName) \
-    extern "C" {                                                                             \
+    extern "C" {                                                                            \
     ICY_GRAFT_EXPORT extern const icy::graft::Manifest icy_graft_manifest = {               \
-        icy::graft::ABI_VERSION,                                                             \
-        __FILE__,                                                                            \
-        pluginId,                                                                            \
-        pluginName,                                                                          \
-        pluginVersion,                                                                       \
-        runtimeKind,                                                                         \
-        entrypointName,                                                                      \
-    };                                                                                       \
+        icy::graft::ABI_VERSION,                                                            \
+        __FILE__,                                                                           \
+        pluginId,                                                                           \
+        pluginName,                                                                         \
+        pluginVersion,                                                                      \
+        runtimeKind,                                                                        \
+        entrypointName,                                                                     \
+    };                                                                                      \
     }
 
 

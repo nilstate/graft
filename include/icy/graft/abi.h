@@ -47,6 +47,8 @@
 #define ICY_GRAFT_RUNTIME_HOST "host"
 
 
+/// What a graft plugin exports under ICY_GRAFT_PLUGIN_MANIFEST_SYMBOL: its ABI
+/// version, file name, ID, name, version, runtime and entry point.
 typedef struct icy_graft_manifest
 {
     uint32_t abiVersion;

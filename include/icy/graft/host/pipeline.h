@@ -33,6 +33,8 @@ extern const icy_graft_manifest_t icy_pipeline_api_manifest;
 typedef struct icy_pipeline icy_pipeline_t;
 
 
+/// Options for icy_pipeline_api.create: the pipeline's name, signalling token, room
+/// and ICE server, with struct_size set to the size the caller was built with.
 typedef struct icy_pipeline_options
 {
     uint32_t struct_size;
@@ -43,6 +45,8 @@ typedef struct icy_pipeline_options
 } icy_pipeline_options_t;
 
 
+/// The pipeline host API returned by icy_pipeline_api(): create a pipeline, attach
+/// an RTSP source and a WebRTC sender, start and stop it, and read its last error.
 typedef struct icy_pipeline_api
 {
     uint32_t abi_version;

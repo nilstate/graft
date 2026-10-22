@@ -17,4 +17,4 @@ Graft is the native ABI boundary for icey. It defines:
 
 Graft does not make a C++ class hierarchy the public ABI. Hosts, plugins, and foreign bindings agree on a manifest and then exchange typed C-compatible entrypoints.
 
-- [Graft module guide](../../docs/modules/graft.md)
+- [Graft module guide](https://github.com/nilstate/icey/blob/main/docs/modules/graft.md)
